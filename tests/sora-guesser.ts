@@ -1,25 +1,25 @@
-import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
-import { SoraGuesser } from "../target/types/sora_guesser";
-import {
-  TOKEN_PROGRAM_ID,
-  createMint,
-  createAccount,
-  mintTo,
-  getAccount,
-  setAuthority,
-  AuthorityType,
-} from "@solana/spl-token";
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID, createMint, createAccount, getAccount, setAuthority, AuthorityType } from "@solana/spl-token";
 import { assert } from "chai";
+type GameState = {
+  tokenMint: anchor.web3.PublicKey;
+  totalMinted: anchor.BN;
+  currentReward: anchor.BN;
+  halvingThreshold: anchor.BN;
+  authority: anchor.web3.PublicKey;
+};
 
 describe("sora-guesser", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
+  const wallet = provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair };
 
-  const program = anchor.workspace.SoraGuesser as Program<SoraGuesser>;
+  const program = anchor.workspace.SoraGuesser as Program;
   
   let tokenMint: anchor.web3.PublicKey;
   let gameState: anchor.web3.PublicKey;
+  let gameStateKeypair: anchor.web3.Keypair;
   let winnerTokenAccount: anchor.web3.PublicKey;
   let gameAuthority: anchor.web3.PublicKey;
   let gameBump: number;
@@ -28,6 +28,10 @@ describe("sora-guesser", () => {
   let guesser: anchor.web3.Keypair;
 
   before(async () => {
+    // Create game state keypair (program does not use seeds for init)
+    gameStateKeypair = anchor.web3.Keypair.generate();
+    gameState = gameStateKeypair.publicKey;
+
     // Generate keypairs
     authority = anchor.web3.Keypair.generate();
     creator = anchor.web3.Keypair.generate();
@@ -50,37 +54,21 @@ describe("sora-guesser", () => {
     gameBump = bump;
 
     // Create token mint
-    tokenMint = await createMint(
-      provider.connection,
-      provider.wallet.payer,
-      provider.wallet.publicKey, // Initial mint authority
-      null,
-      9 // 9 decimals
-    );
+    tokenMint = await createMint(provider.connection, wallet.payer, wallet.publicKey, null, 9);
 
-    // Set the game authority as the mint authority
+    // Transfer mint authority from provider to the game authority PDA
     await setAuthority(
       provider.connection,
-      provider.wallet.payer,
+      wallet.payer,
       tokenMint,
-      gameAuthority,
+      wallet.publicKey, // current authority
       AuthorityType.MintTokens,
-      provider.wallet.publicKey
+      gameAuthority // new authority
     );
 
     // Create winner's token account
-    winnerTokenAccount = await createAccount(
-      provider.connection,
-      provider.wallet.payer,
-      tokenMint,
-      provider.wallet.publicKey
-    );
+    winnerTokenAccount = await createAccount(provider.connection, wallet.payer, tokenMint, wallet.publicKey);
 
-    // Generate game state address
-    gameState = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("game_state")],
-      program.programId
-    )[0];
   });
 
   it("Initializes the game", async () => {
@@ -95,10 +83,10 @@ describe("sora-guesser", () => {
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([authority])
+      .signers([authority, gameStateKeypair])
       .rpc();
 
-    const state = await program.account.gameState.fetch(gameState);
+    const state = (await program.account.gameState.fetch(gameState)) as unknown as GameState;
     assert.ok(state.tokenMint.equals(tokenMint));
     assert.equal(state.totalMinted.toNumber(), 0);
     assert.equal(state.currentReward.toNumber(), 100);
@@ -137,7 +125,7 @@ describe("sora-guesser", () => {
     assert.equal(finalAmount - initialAmount, 100);
 
     // Verify game state updated
-    const gameStateAccount = await program.account.gameState.fetch(gameState);
+    const gameStateAccount = (await program.account.gameState.fetch(gameState)) as unknown as GameState;
     assert.equal(gameStateAccount.totalMinted.toNumber(), 100);
   });
 
@@ -190,7 +178,7 @@ describe("sora-guesser", () => {
       .signers([authority])
       .rpc();
 
-    const gameStateAccount = await program.account.gameState.fetch(gameState);
+    const gameStateAccount = (await program.account.gameState.fetch(gameState)) as unknown as GameState;
     assert.equal(gameStateAccount.currentReward.toNumber(), newReward);
   });
 
@@ -238,7 +226,7 @@ describe("sora-guesser", () => {
         .rpc();
     }
 
-    const state = await program.account.gameState.fetch(gameState);
+    const state = (await program.account.gameState.fetch(gameState)) as unknown as GameState;
     assert.equal(state.currentReward.toNumber(), 50); // Reward should be halved
     assert.ok(state.totalMinted.toNumber() < 100000); // Total minted should reset
   });

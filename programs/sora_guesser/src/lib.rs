@@ -46,9 +46,10 @@ pub mod sora_guesser {
         }
 
         // Mint tokens to recipient
+        let bump = *ctx.bumps.get("game_authority").unwrap();
         let seeds = &[
             b"game_authority".as_ref(),
-            &[ctx.bumps.game_authority],
+            &[bump],
         ];
         let signer = &[&seeds[..]];
 
