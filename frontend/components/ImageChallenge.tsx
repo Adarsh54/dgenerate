@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Send, CheckCircle, XCircle, Sparkles, Coins, Loader2 } from 'lucide-react';
-import RewardAnimation from './RewardAnimation';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Send, Sparkles, Loader2 } from 'lucide-react';
 
 interface ImageChallengeProps {
   imageId: string;
@@ -13,12 +12,9 @@ interface ImageChallengeProps {
 }
 
 export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGuessSubmitted }: ImageChallengeProps) {
-  const { publicKey, sendTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey } = useWallet();
   const [guess, setGuess] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
-  const [showReward, setShowReward] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,55 +22,44 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
     if (!publicKey || !guess.trim()) return;
 
     setSubmitting(true);
-    setResult(null);
-    setShowReward(false);
 
     try {
-      // Calculate similarity between guess and actual prompt
-      const similarity = calculateSimilarity(guess.toLowerCase().trim(), actualPrompt.toLowerCase().trim());
-      
-      // Consider it correct if similarity is above 70%
-      const isCorrect = similarity > 0.7;
-      
-      if (isCorrect) {
-        // TODO: Integrate with your Solana program
-        // For now, simulate the transaction
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        setResult('correct');
-        setShowReward(true);
-        setTimeout(() => setShowReward(false), 3000);
-        onGuessSubmitted?.();
-      } else {
-        setResult('incorrect');
+      // Submit guess to backend
+      const response = await fetch('/api/submit-guess', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageId,
+          walletId: publicKey.toString(),
+          guessText: guess.trim(),
+          actualPrompt,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit guess');
       }
-      
+
+      // Clear input and move to next image immediately
       setGuess('');
+      
+      // Trigger moving to next image
+      setTimeout(() => {
+        onGuessSubmitted?.();
+      }, 300); // Small delay for smooth transition
+      
     } catch (error) {
       console.error('Error submitting guess:', error);
+      alert('Failed to submit guess. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Simple similarity calculation (you can improve this)
-  const calculateSimilarity = (str1: string, str2: string): number => {
-    const words1 = new Set(str1.split(/\s+/));
-    const words2 = new Set(str2.split(/\s+/));
-    
-    const intersection = new Set([...words1].filter(x => words2.has(x)));
-    const union = new Set([...words1, ...words2]);
-    
-    return intersection.size / union.size;
-  };
-
   return (
     <div className="relative">
-      {/* Reward Animation */}
-      {showReward && (
-        <RewardAnimation amount={100} onComplete={() => setShowReward(false)} />
-      )}
-
       <div className="card max-w-2xl mx-auto">
         {/* Image Container */}
         <div className="relative bg-black rounded-xl overflow-hidden mb-6 aspect-square">
@@ -86,9 +71,17 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
           <img
             src={imageUrl}
             alt="AI Generated"
+            crossOrigin="anonymous"
             className="w-full h-full object-contain"
-            onLoad={() => setImageLoading(false)}
-            onError={() => setImageLoading(false)}
+            onLoad={() => {
+              console.log('✅ Image loaded successfully:', imageUrl);
+              setImageLoading(false);
+            }}
+            onError={(e) => {
+              console.error('❌ Image failed to load:', imageUrl);
+              console.error('Error:', e);
+              setImageLoading(false);
+            }}
           />
           <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary-400" />
@@ -100,7 +93,7 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-2">What's the Prompt?</h2>
           <p className="text-white/70">
-            Look at the AI-generated image and guess the prompt used to create it. Correct guesses earn you tokens!
+            Look at the AI-generated image and guess the prompt used to create it. Submit your guess to continue!
           </p>
         </div>
 
@@ -120,33 +113,6 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
             />
           </div>
 
-          {/* Result Display */}
-          {result && (
-            <div className={`p-4 rounded-xl flex items-center gap-3 ${
-              result === 'correct' 
-                ? 'bg-green-500/20 border border-green-500/50' 
-                : 'bg-red-500/20 border border-red-500/50'
-            }`}>
-              {result === 'correct' ? (
-                <>
-                  <CheckCircle className="w-6 h-6 text-green-400" />
-                  <div>
-                    <p className="font-semibold text-green-400">Correct! 🎉</p>
-                    <p className="text-sm text-white/70">You earned 100 tokens!</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-6 h-6 text-red-400" />
-                  <div>
-                    <p className="font-semibold text-red-400">Not quite right</p>
-                    <p className="text-sm text-white/70">Try again with a different guess!</p>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
           {/* Submit Button */}
           {!publicKey ? (
             <div className="p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-xl text-center">
@@ -161,12 +127,12 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
               {submitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Checking...
+                  Submitting...
                 </>
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  Submit Guess
+                  Submit & Next
                 </>
               )}
             </button>
