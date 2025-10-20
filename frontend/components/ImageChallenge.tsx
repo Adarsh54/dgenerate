@@ -16,7 +16,7 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
   const [guess, setGuess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-
+  const [similarityScore, setSimilarityScore] = useState(0);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!publicKey || !guess.trim()) return;
@@ -25,7 +25,7 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
 
     try {
       // Submit guess to backend
-      const response = await fetch('/api/submit-guess', {
+      const response = await fetch('/api/submit-guess-compatible', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,6 +38,7 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
         }),
       });
 
+
       if (!response.ok) {
         throw new Error('Failed to submit guess');
       }
@@ -49,7 +50,7 @@ export default function ImageChallenge({ imageId, imageUrl, actualPrompt, onGues
       setTimeout(() => {
         onGuessSubmitted?.();
       }, 300); // Small delay for smooth transition
-      
+
     } catch (error) {
       console.error('Error submitting guess:', error);
       alert('Failed to submit guess. Please try again.');
