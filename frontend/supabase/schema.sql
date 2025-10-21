@@ -132,3 +132,4 @@ CREATE POLICY "Anyone can insert/update user stats"
   ON users FOR ALL
   USING (true);
 
+

@@ -138,3 +138,4 @@ After setup, you can:
 ---
 
 **Need help?** Check the full guide: `SUPABASE_SETUP.md`
+

@@ -368,3 +368,4 @@ created_at       TIMESTAMP
 **🎉 Congrats! Your backend is ready!**
 
 Now run `npm run dev` and start playing! 🚀
+
