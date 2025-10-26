@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, MintTo};
 
@@ -12,24 +14,19 @@ pub mod sora_guesser {
         let game_state = &mut ctx.accounts.game_state;
         game_state.token_mint = ctx.accounts.token_mint.key();
         game_state.total_minted = 0;
-        game_state.current_reward = 100; // Initial reward of 100 tokens
-        game_state.halving_threshold = 100_000; // Tokens to mint before halving
+        game_state.current_reward = 10000; // Initial reward of 1000 tokens
+        game_state.halving_threshold = 10_000_000_000; // Tokens to mint before halving
         game_state.authority = ctx.accounts.authority.key();
         Ok(())
     }
 
-    // Reward user based on API response
+
     pub fn reward_user(
         ctx: Context<RewardUser>,
-        api_response: bool, // This would come from your API call
         recipient_wallet: Pubkey,
     ) -> Result<()> {
         let game_state = &mut ctx.accounts.game_state;
         
-        // Only proceed if API returns true
-        require!(api_response, ErrorCode::InvalidApiResponse);
-        
-        // Calculate current reward amount
         let reward_amount = game_state.current_reward;
         
         // Update total minted
@@ -40,7 +37,7 @@ pub mod sora_guesser {
         if game_state.total_minted >= game_state.halving_threshold {
             game_state.current_reward = game_state.current_reward.checked_div(2)
                 .ok_or(ErrorCode::CalculationOverflow)?;
-            // Reset total_minted counter for next halving
+            // reset counter
             game_state.total_minted = game_state.total_minted.checked_sub(game_state.halving_threshold)
                 .ok_or(ErrorCode::CalculationOverflow)?;
         }
