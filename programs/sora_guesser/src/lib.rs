@@ -14,7 +14,7 @@ pub mod sora_guesser {
         let game_state = &mut ctx.accounts.game_state;
         game_state.token_mint = ctx.accounts.token_mint.key();
         game_state.total_minted = 0;
-        game_state.current_reward = 10000; // Initial reward of 1000 tokens
+        game_state.current_reward = 10_000; // Initial reward of 1000 tokens
         game_state.halving_threshold = 10_000_000_000; // Tokens to mint before halving
         game_state.authority = ctx.accounts.authority.key();
         Ok(())
@@ -43,7 +43,7 @@ pub mod sora_guesser {
         }
 
         // Mint tokens to recipient
-        let bump = *ctx.bumps.get("game_authority").unwrap();
+        let bump = ctx.bumps.game_authority;
         let seeds = &[
             b"game_authority".as_ref(),
             &[bump],
@@ -64,12 +64,6 @@ pub mod sora_guesser {
         Ok(())
     }
 
-    // Admin function to update reward amount (only for authority)
-    pub fn update_reward(ctx: Context<UpdateReward>, new_reward: u64) -> Result<()> {
-        let game_state = &mut ctx.accounts.game_state;
-        game_state.current_reward = new_reward;
-        Ok(())
-    }
 }
 
 #[derive(Accounts)]
