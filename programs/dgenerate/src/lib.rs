@@ -1,12 +1,16 @@
 #![allow(unexpected_cfgs)]
-
+mod error;
+mod constants;
+mod state;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, MintTo};
+use crate::error::ErrorCode;
+use crate::state::GameState;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("EPKw6RHc8Bf7m8BpKxv66NMmzqwnn7tSRwcyJ9cNbNnD");
 
 #[program]
-pub mod sora_guesser {
+pub mod dgenerate {
     use super::*;
 
     // Initialize the game state
@@ -14,8 +18,8 @@ pub mod sora_guesser {
         let game_state = &mut ctx.accounts.game_state;
         game_state.token_mint = ctx.accounts.token_mint.key();
         game_state.total_minted = 0;
-        game_state.current_reward = 10_000; // Initial reward of 10000 tokens
-        game_state.halving_threshold = 10_000_000_000; // Tokens to mint before halving
+        game_state.current_reward = constants::INITIAL_REWARD; // Initial reward amount
+        game_state.halving_threshold = constants::HALVING_THRESHOLD; // Threshold before halving
         game_state.authority = ctx.accounts.authority.key();
         Ok(())
     }
@@ -23,7 +27,6 @@ pub mod sora_guesser {
 
     pub fn reward_user(
         ctx: Context<RewardUser>,
-        recipient_wallet: Pubkey,
     ) -> Result<()> {
         let game_state = &mut ctx.accounts.game_state;
         
@@ -45,7 +48,7 @@ pub mod sora_guesser {
         // Mint tokens to recipient
         let bump = ctx.bumps.game_authority;
         let seeds = &[
-            b"game_authority".as_ref(),
+            constants::GAME_AUTHORITY_SEED,
             &[bump],
         ];
         let signer = &[&seeds[..]];
@@ -71,7 +74,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 32 + 8 + 8 + 8 + 32, // discriminator + token_mint + total_minted + current_reward + halving_threshold + authority
+        space = crate::constants::GAME_STATE_SPACE, // discriminator + fields
     )]
     pub game_state: Account<'info, GameState>,
     
@@ -80,7 +83,7 @@ pub struct Initialize<'info> {
     
     /// CHECK: PDA that acts as mint authority
     #[account(
-        seeds = [b"game_authority"],
+        seeds = [crate::constants::GAME_AUTHORITY_SEED],
         bump,
     )]
     pub game_authority: UncheckedAccount<'info>,
@@ -105,7 +108,7 @@ pub struct RewardUser<'info> {
     
     /// CHECK: PDA that acts as mint authority
     #[account(
-        seeds = [b"game_authority"],
+        seeds = [crate::constants::GAME_AUTHORITY_SEED],
         bump,
     )]
     pub game_authority: UncheckedAccount<'info>,
@@ -114,34 +117,4 @@ pub struct RewardUser<'info> {
     pub recipient_token_account: Account<'info, TokenAccount>,
     
     pub token_program: Program<'info, Token>,
-}
-
-#[derive(Accounts)]
-pub struct UpdateReward<'info> {
-    #[account(mut)]
-    pub game_state: Account<'info, GameState>,
-    
-    #[account(
-        constraint = authority.key() == game_state.authority @ ErrorCode::Unauthorized
-    )]
-    pub authority: Signer<'info>,
-}
-
-#[account]
-pub struct GameState {
-    pub token_mint: Pubkey,
-    pub total_minted: u64,
-    pub current_reward: u64,
-    pub halving_threshold: u64,
-    pub authority: Pubkey,
-}
-
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Calculation overflow occurred")]
-    CalculationOverflow,
-    #[msg("Invalid API response")]
-    InvalidApiResponse,
-    #[msg("Unauthorized access")]
-    Unauthorized,
 }

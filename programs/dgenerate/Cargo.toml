@@ -1,12 +1,12 @@
 [package]
-name = "sora_guesser"
+name = "dgenerate"
 version = "0.1.0"
 description = "Sora video guessing game with token rewards"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "sora_guesser"
+name = "dgenerate"
 
 [features]
 no-entrypoint = []
@@ -19,3 +19,5 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = "0.32.1"
 anchor-spl = "0.32.1"
+
+

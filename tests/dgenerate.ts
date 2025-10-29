@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { SoraGuesser } from "../target/types/sora_guesser";
+import { Dgenerate } from "../target/types/dgenerate";
 import { TOKEN_PROGRAM_ID, createMint, createAccount, getAccount, setAuthority, AuthorityType } from "@solana/spl-token";
 import { assert } from "chai";
 type GameState = {
@@ -11,12 +11,12 @@ type GameState = {
   authority: anchor.web3.PublicKey;
 };
 
-describe("sora-guesser", () => {
+describe("dgenerate", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const wallet = provider.wallet as anchor.Wallet & { payer: anchor.web3.Keypair };
 
-  const program = anchor.workspace.SoraGuesser as Program<SoraGuesser>;
+  const program = anchor.workspace.Dgenerate as Program<Dgenerate>;
   
   let tokenMint: anchor.web3.PublicKey;
   let gameState: anchor.web3.PublicKey;
@@ -142,3 +142,5 @@ describe("sora-guesser", () => {
     assert.equal(after.totalMinted.toNumber(), previousTotal + previousReward * mints);
   });
 });
+
+
