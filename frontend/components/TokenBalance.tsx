@@ -53,28 +53,24 @@ export default function TokenBalance() {
   if (!mounted || !publicKey) return null;
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Coins className="w-5 h-5 text-yellow-400" />
-          <h3 className="text-lg font-semibold">Your Balance</h3>
-        </div>
-        <TrendingUp className="w-5 h-5 text-green-400" />
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <Coins className="w-6 h-6 text-yellow-400" />
+        <h3 className="text-lg font-semibold text-white">Balance</h3>
       </div>
       
       {loading ? (
         <div className="animate-pulse">
-          <div className="h-8 bg-white/20 rounded w-32"></div>
+          <div className="h-12 bg-white/10 rounded w-40"></div>
         </div>
       ) : (
-        <div className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-          {balance !== null ? balance.toLocaleString() : '0'} SORA
+        <div>
+          <div className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+            {balance !== null ? balance.toLocaleString() : '0'}
+          </div>
+          <p className="text-base text-white/70 mt-1">SORA tokens</p>
         </div>
       )}
-      
-      <p className="text-sm text-white/60 mt-2">
-        Earn more by guessing image prompts!
-      </p>
     </div>
   );
 }

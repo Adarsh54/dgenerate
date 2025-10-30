@@ -6,8 +6,8 @@ import { WalletProvider } from "@/components/WalletProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Sora Guesser - Win Tokens by Guessing Video Prompts",
-  description: "TikTok-style video guessing game. Watch Sora AI-generated videos and guess the prompts to earn token rewards!",
+  title: "Sora Guesser - Instagram Reels Style AI Prompt Game",
+  description: "Instagram Reels-style image guessing game. Swipe through AI-generated images and guess the prompts to earn token rewards!",
 };
 
 export default function RootLayout({
