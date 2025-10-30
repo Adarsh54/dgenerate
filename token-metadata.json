@@ -1,0 +1,17 @@
+{
+  "name": "dgenerate",
+  "symbol": "DGEN",
+  "description": "dgenerate game token - Earn DGEN by playing and guessing correctly!",
+  "image": "https://ibb.co/qY3pSx5y",
+  "attributes": [],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://ibb.co/qY3pSx5y",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}
+
